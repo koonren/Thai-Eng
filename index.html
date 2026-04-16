@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบฝึกคำศัพท์ - Vocab Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background: #f0f9ff; scroll-behavior: smooth; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex justify-center items-start">
+
+    <div id="setup-screen" class="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden border-t-8 border-blue-700 p-10 mt-10 text-center">
+        <div class="inline-block bg-blue-700 text-white text-sm px-4 py-1 rounded-full font-bold mb-4">Vocabulary Practice</div>
+        <h1 class="text-3xl font-extrabold text-blue-900 mb-2 italic text-left">ฝึกคำศัพท์ ไทย-อังกฤษ</h1>
+        <p class="text-gray-500 mb-8 font-medium italic text-left border-b pb-4">ทำทุกข้อในคลัง | สลับโจทย์ | 10 ตัวเลือกสุ่ม</p>
+        
+        <div class="text-left mb-6">
+            <label class="block text-gray-700 font-bold mb-2">ชื่อผู้เข้าฝึก</label>
+            <input type="text" id="user-name" placeholder="กรอกชื่อของคุณ" class="w-full border-2 border-gray-100 rounded-2xl px-5 py-4 outline-none focus:border-blue-500 text-lg shadow-sm">
+        </div>
+        
+        <button onclick="prepareQuiz()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-5 rounded-2xl shadow-lg transition text-xl transform hover:scale-[1.02]">
+            เริ่มฝึกคำศัพท์
+        </button>
+    </div>
+
+    <div id="quiz-screen" class="hidden bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden mt-6 relative">
+        <div class="bg-blue-700 p-5 text-white flex justify-between items-center shadow-md">
+            <div><p class="text-xs opacity-80">ผู้เข้าสอบ</p><span id="display-name" class="font-bold">-</span></div>
+            <div id="timer-box" class="bg-white text-blue-700 px-4 py-2 rounded-xl font-black text-xl min-w-[100px] text-center">00:00</div>
+        </div>
+        
+        <div class="p-8 md:p-12">
+            <div class="flex justify-between items-center mb-6">
+                <span id="q-number" class="text-blue-600 font-bold text-lg bg-blue-50 px-4 py-1 rounded-full">ข้อที่ 1/100</span>
+            </div>
+            <h2 id="q-text" class="text-4xl font-black text-center text-gray-800 mb-10 leading-tight">...</h2>
+            
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                </div>
+
+            <div class="mt-12 flex justify-between items-center border-t pt-8">
+                <button onclick="prevQuestion()" class="text-gray-400 font-bold hover:text-gray-600 transition">← ย้อนกลับ</button>
+                <button onclick="nextQuestion()" id="next-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-2xl font-bold shadow-lg text-lg transition">ข้อถัดไป</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen" class="hidden bg-white w-full max-w-md rounded-3xl shadow-2xl p-12 text-center border-b-8 mt-10">
+        <h2 class="text-2xl font-bold text-gray-800 uppercase">Total Score</h2>
+        <div class="text-8xl font-black my-8 text-blue-600" id="final-score">0</div>
+        <p class="text-gray-500 text-lg mb-8" id="result-msg">...</p>
+        <button onclick="renderReviewForm()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-bold text-lg mb-3">ตรวจคำตอบทั้งหมด</button>
+        <button onclick="location.reload()" class="w-full text-gray-400 py-2 hover:underline">เริ่มใหม่</button>
+    </div>
+
+    <div id="review-screen" class="hidden w-full max-w-3xl mt-6 pb-20">
+        <div class="bg-white p-8 rounded-3xl shadow-lg border-l-8 border-indigo-600 mb-6 flex justify-between items-center sticky top-4 z-10">
+            <h2 class="text-2xl font-black text-indigo-900">เฉลยคำศัพท์</h2>
+            <button onclick="location.reload()" class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold">กลับหน้าแรก</button>
+        </div>
+        <div id="review-list" class="space-y-4"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // === [ ใส่คำศัพท์ของคุณตรงนี้ ] ===
+        // ==========================================
+        const vocabularyData = [
+            { "q": "Apple", "a": "แอปเปิ้ล" },
+            { "q": "Banana", "a": "กล้วย" },
+            { "q": "Cat", "a": "แมว" },
+            { "q": "Dog", "a": "สุนัข" },
+            { "q": "Elephant", "a": "ช้าง" },
+            { "q": "Flower", "a": "ดอกไม้" },
+            { "q": "Grape", "a": "องุ่น" },
+            { "q": "House", "a": "บ้าน" },
+            { "q": "Ice cream", "a": "ไอศกรีม" },
+            { "q": "Jungle", "a": "ป่า" },
+            { "q": "King", "a": "พระราชา" },
+            { "q": "Lion", "a": "สิงโต" },
+            // เพิ่มให้ครบกี่ข้อก็ได้ ระบบจะวนออกมาทำทุกข้อ
+        ];
+        // ==========================================
+
+        let quizQuestions = [];
+        let currentIdx = 0;
+        let userAnswers = {};
+        let startTime;
+        let timerInterval;
+
+        function prepareQuiz() {
+            const name = document.getElementById('user-name').value;
+            if(!name) return alert("กรุณากรอกชื่อ");
+
+            // 1. สลับโจทย์ทั้งหมด (ทำทุกข้อที่มีในคลัง)
+            quizQuestions = [...vocabularyData].sort(() => Math.random() - 0.5);
+
+            // 2. สร้างตัวเลือก 10 ข้อสำหรับแต่ละโจทย์
+            const allAnswers = vocabularyData.map(item => item.a);
+            
+            quizQuestions = quizQuestions.map(item => {
+                // ดึงคำตอบที่ผิดมาจากคลัง
+                let wrongAnswers = allAnswers.filter(ans => ans !== item.a);
+                // สุ่มคำตอบผิดมา 9 ตัว
+                let randomWrong = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 9);
+                // รวมกับคำตอบที่ถูก แล้วสลับที่
+                let finalOptions = [...randomWrong, item.a].sort(() => Math.random() - 0.5);
+                
+                return { ...item, options: finalOptions };
+            });
+
+            document.getElementById('display-name').innerText = name;
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            
+            startTime = Date.now();
+            startTimer();
+            showQuestion();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                let diff = Math.floor((Date.now() - startTime) / 1000);
+                let m = Math.floor(diff / 60).toString().padStart(2, '0');
+                let s = (diff % 60).toString().padStart(2, '0');
+                document.getElementById('timer-box').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function showQuestion() {
+            const data = quizQuestions[currentIdx];
+            document.getElementById('q-number').innerText = `ข้อที่ ${currentIdx + 1}/${quizQuestions.length}`;
+            document.getElementById('q-text').innerText = data.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            data.options.forEach((opt, idx) => {
+                const isSelected = userAnswers[currentIdx] === opt;
+                container.innerHTML += `
+                    <div onclick="selectOption('${opt}')" class="flex items-center border-2 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-100'} p-4 rounded-xl cursor-pointer hover:bg-gray-50 transition shadow-sm">
+                        <div class="w-8 h-8 rounded-full border flex items-center justify-center mr-3 ${isSelected ? 'bg-blue-500 text-white' : 'text-gray-300'} font-bold text-sm">
+                            ${idx + 1}
+                        </div>
+                        <span class="text-md ${isSelected ? 'font-bold text-blue-900' : 'text-gray-700'}">${opt}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('next-btn').innerText = (currentIdx === quizQuestions.length - 1) ? "ส่งคำตอบ" : "ข้อถัดไป";
+        }
+
+        function selectOption(text) { userAnswers[currentIdx] = text; showQuestion(); }
+
+        function nextQuestion() {
+            if (currentIdx < quizQuestions.length - 1) {
+                currentIdx++; showQuestion(); window.scrollTo(0,0);
+            } else {
+                if(confirm("ส่งคำตอบทั้งหมดใช่หรือไม่?")) showResult();
+            }
+        }
+
+        function prevQuestion() { if (currentIdx > 0) { currentIdx--; showQuestion(); } }
+
+        function showResult() {
+            clearInterval(timerInterval);
+            let score = 0;
+            quizQuestions.forEach((item, index) => { if(userAnswers[index] === item.a) score++; });
+
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('result-msg').innerText = `เก่งมาก! คุณทำได้ ${score} จากทั้งหมด ${quizQuestions.length} ข้อ`;
+        }
+
+        function renderReviewForm() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('review-screen').classList.remove('hidden');
+            const list = document.getElementById('review-list');
+            list.innerHTML = '';
+
+            quizQuestions.forEach((data, index) => {
+                const userAns = userAnswers[index];
+                const isCorrect = userAns === data.a;
+                
+                const card = document.createElement('div');
+                card.className = `bg-white p-5 rounded-2xl shadow-sm border-l-8 ${isCorrect ? 'border-green-500' : 'border-red-500'}`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="font-bold text-gray-400">ข้อที่ ${index + 1}</span>
+                        <span class="${isCorrect ? 'text-green-600' : 'text-red-600'} font-bold">${isCorrect ? 'Correct' : 'Incorrect'}</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <p class="text-2xl font-bold text-gray-800">${data.q}</p>
+                        <span class="text-gray-400">→</span>
+                        <p class="text-2xl font-bold text-blue-600">${data.a}</p>
+                    </div>
+                    ${!isCorrect ? `<p class="mt-2 text-sm text-red-500 font-medium">คุณตอบ: ${userAns || 'ไม่ได้ตอบ'}</p>` : ''}
+                `;
+                list.appendChild(card);
+            });
+            window.scrollTo(0,0);
+        }
+    </script>
+</body>
+</html>
