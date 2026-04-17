@@ -159,23 +159,23 @@
             if(!name) return alert("กรุณากรอกชื่อ");
 
             // 1. สลับโจทย์ทั้งหมด
-            quizQuestions = [...vocabularyData].sort(() => Math.random() - 0.5);
+quizQuestions = [...vocabularyData].sort(() => Math.random() - 0.5);
 
-            // 2. ดึงคำแปลทั้งหมดที่มีในคลัง (แบบไม่ซ้ำกันเลย) เพื่อเอามาทำเป็นตัวเลือกหลอก
-            const allUniqueAnswers = [...new Set(vocabularyData.map(item => item.a))];
-            
-            quizQuestions = quizQuestions.map(item => {
-                // กรองคำตอบที่ "ถูก" ของข้อนี้ออกไปจากรายการตัวเลือกหลอกก่อน เพื่อไม่ให้ซ้ำ
-                let wrongOptionsPool = allUniqueAnswers.filter(ans => ans !== item.a);
-                
-                // สุ่มคำตอบหลอกมา 9 ตัวจากคลังที่ไม่ซ้ำ
-                let randomWrong = wrongOptionsPool.sort(() => Math.random() - 0.5).slice(0, 9);
-                
-                // รวมคำตอบที่ถูกเข้าไป เป็น 10 ตัวเลือก
-                let finalOptions = [...randomWrong, item.a].sort(() => Math.random() - 0.5);
-                
-                return { ...item, options: finalOptions };
-            });
+// 2. ดึงคำแปลทั้งหมดที่ไม่ซ้ำกัน (เพิ่มบรรทัดนี้)
+const allUniqueAnswers = [...new Set(vocabularyData.map(item => item.a))];
+
+quizQuestions = quizQuestions.map(item => {
+    // กรองคำตอบที่ถูกของข้อนั้นๆ ออกจาก Pool ตัวเลือกหลอก
+    let wrongOptionsPool = allUniqueAnswers.filter(ans => ans !== item.a);
+    
+    // สุ่มคำตอบหลอกมา 15 ตัว
+    let randomWrong = wrongOptionsPool.sort(() => Math.random() - 0.5).slice(0, 15);
+    
+    // รวมเป็น 16 ตัวเลือก
+    let finalOptions = [...randomWrong, item.a].sort(() => Math.random() - 0.5);
+    
+    return { ...item, options: finalOptions };
+});
 
             document.getElementById('display-name').innerText = name;
             document.getElementById('setup-screen').classList.add('hidden');
